@@ -1,0 +1,7 @@
+.tmp/
+.worktrees/
+*.test
+*.out
+coverage.txt
+.idea/
+.vscode/
