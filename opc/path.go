@@ -5,6 +5,9 @@ import (
 	"strings"
 )
 
+// rootRelsName is the .rels part that holds the package-level relationships.
+const rootRelsName = "/_rels/.rels"
+
 // NormalizePartName returns the canonical part-name form expected by OPC:
 // rooted (begins with "/"), forward slashes, and percent-decoded. OPC part
 // names look like "/3D/3dmodel.model" — a leading slash, no trailing slash
@@ -41,7 +44,7 @@ func ResolveRelative(base, target string) string {
 func RelsName(part string) string {
 	p := NormalizePartName(part)
 	if p == "/" {
-		return "/_rels/.rels"
+		return rootRelsName
 	}
 	dir, base := path.Split(p)
 	return dir + "_rels/" + base + ".rels"
@@ -50,7 +53,7 @@ func RelsName(part string) string {
 // IsRelsPart reports whether name is the path of an OPC relationships part.
 func IsRelsPart(name string) bool {
 	p := NormalizePartName(name)
-	return p == "/_rels/.rels" || strings.HasSuffix(p, ".rels") && strings.Contains(p, "/_rels/")
+	return p == rootRelsName || strings.HasSuffix(p, ".rels") && strings.Contains(p, "/_rels/")
 }
 
 // IsContentTypesPart reports whether name is the [Content_Types].xml part.

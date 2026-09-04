@@ -17,7 +17,7 @@ func ReadModel(ctx context.Context, data []byte) (*Model, error) {
 		return nil, fmt.Errorf("tmf: parse model XML: %w", err)
 	}
 	root := doc.DocumentElement()
-	if root == nil || root.LocalName() != "model" {
+	if root == nil || root.LocalName() != modelElementName {
 		return nil, fmt.Errorf("%w: root element must be <model>", ErrMalformedModel)
 	}
 	return readModel(root)
@@ -214,18 +214,16 @@ func readMesh(elem *helium.Element) (*Mesh, error) {
 			}
 		case "triangles":
 			for t := range xmlutil.ChildElements(child, "triangle") {
-				tri, err := readTriangle(t)
-				if err != nil {
-					return nil, err
-				}
-				mesh.triangles = append(mesh.triangles, tri)
+				mesh.triangles = append(mesh.triangles, readTriangle(t))
 			}
 		}
 	}
 	return mesh, nil
 }
 
-func readTriangle(elem *helium.Element) (Triangle, error) {
+// readTriangle never fails: absent or unparsable indices read as 0, matching
+// how <vertex> coordinates are handled.
+func readTriangle(elem *helium.Element) Triangle {
 	v1, _ := xmlutil.AttrUint32(elem, "v1")
 	v2, _ := xmlutil.AttrUint32(elem, "v2")
 	v3, _ := xmlutil.AttrUint32(elem, "v3")
@@ -251,7 +249,7 @@ func readTriangle(elem *helium.Element) (Triangle, error) {
 		}
 		t.HasPIndices = true
 	}
-	return t, nil
+	return t
 }
 
 func readComponent(elem *helium.Element) (*Component, error) {
@@ -326,7 +324,7 @@ func readBuildItem(elem *helium.Element) (*BuildItem, error) {
 func fieldsCommaSpace(s string) []string {
 	var out []string
 	start := -1
-	for i := 0; i < len(s); i++ {
+	for i := range len(s) {
 		c := s[i]
 		if c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == ',' {
 			if start >= 0 {

@@ -34,16 +34,16 @@ type Resources struct {
 
 // Stack is a single <slicestack>.
 type Stack struct {
-	ID       uint32
-	ZBottom  float64
-	Slices   []*Slice
+	ID      uint32
+	ZBottom float64
+	Slices  []*Slice
 	// SliceRefs allows a slice stack to reference slices defined in
 	// another stack inside another model part (production extension).
-	SliceRefs []SliceRef
+	SliceRefs []Ref
 }
 
-// SliceRef references slices defined in another stack.
-type SliceRef struct {
+// Ref references slices defined in another stack.
+type Ref struct {
 	SliceStackID uint32
 	Path         string
 }
@@ -60,15 +60,15 @@ type Vertex2D struct{ X, Y float64 }
 
 // Polygon is a list of vertex indices defining a closed contour.
 type Polygon struct {
-	StartV  uint32
+	StartV   uint32
 	Segments []Segment
 }
 
 // Segment is one edge of a polygon. P2 is the next vertex; P1 is implicit
 // (previous segment's P2 or the polygon's StartV).
 type Segment struct {
-	V2  uint32
-	P1  uint32 // optional curvature control or PID (extension-defined)
+	V2    uint32
+	P1    uint32 // optional curvature control or PID (extension-defined)
 	HasP1 bool
 }
 
@@ -86,8 +86,8 @@ type ObjectInfo struct {
 
 // Of returns the slice resources attached to res, creating an empty one if absent.
 func Of(res *tmf.Resources) *Resources {
-	if v := res.ExtensionResources(Namespace); v != nil {
-		return v.(*Resources)
+	if v, ok := res.ExtensionResources(Namespace).(*Resources); ok {
+		return v
 	}
 	r := &Resources{}
 	res.SetExtensionResources(Namespace, r)
@@ -166,7 +166,7 @@ func (extReader) ReadResourceElement(res *tmf.Resources, elem *helium.Element) e
 			}
 			st.Slices = append(st.Slices, s)
 		case "sliceref":
-			ref := SliceRef{Path: attr(child, "slicepath")}
+			ref := Ref{Path: attr(child, "slicepath")}
 			if v, ok := attrUint32(child, "slicestackid"); ok {
 				ref.SliceStackID = v
 			}

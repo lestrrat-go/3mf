@@ -33,7 +33,7 @@ type Resources struct {
 
 // Function is a v:function resource: a named, evaluable scalar/vector field.
 type Function struct {
-	ID         uint32
+	ID          uint32
 	DisplayName string
 	// Body holds the parsed children of the <function> element. Because the
 	// volumetric schema includes a large taxonomy of node types
@@ -65,8 +65,8 @@ type Node struct {
 // Of returns the volumetric resources attached to res, creating an empty one
 // when absent.
 func Of(res *tmf.Resources) *Resources {
-	if v := res.ExtensionResources(Namespace); v != nil {
-		return v.(*Resources)
+	if v, ok := res.ExtensionResources(Namespace).(*Resources); ok {
+		return v
 	}
 	r := &Resources{}
 	res.SetExtensionResources(Namespace, r)

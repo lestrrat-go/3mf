@@ -251,7 +251,7 @@ func (p *Package) syncOPC() error {
 // nextRelID returns a fresh "rIdN" identifier that doesn't collide with the
 // existing entries in r.
 func nextRelID(r *opc.Relationships) string {
-	max := 0
+	highest := 0
 	for _, e := range r.Entries {
 		if len(e.ID) > 3 && e.ID[:3] == "rId" {
 			n := 0
@@ -262,10 +262,10 @@ func nextRelID(r *opc.Relationships) string {
 				}
 				n = n*10 + int(c-'0')
 			}
-			if n > max {
-				max = n
+			if n > highest {
+				highest = n
 			}
 		}
 	}
-	return fmt.Sprintf("rId%d", max+1)
+	return fmt.Sprintf("rId%d", highest+1)
 }

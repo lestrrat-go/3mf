@@ -64,8 +64,8 @@ type Resources struct {
 
 // Of returns the secure-content resources attached to res, creating one if absent.
 func Of(res *tmf.Resources) *Resources {
-	if v := res.ExtensionResources(Namespace); v != nil {
-		return v.(*Resources)
+	if v, ok := res.ExtensionResources(Namespace).(*Resources); ok {
+		return v
 	}
 	r := &Resources{}
 	res.SetExtensionResources(Namespace, r)
@@ -263,7 +263,7 @@ func decodeBase64(s string) ([]byte, error) {
 	// keep error messages consistent.
 	// Trim any whitespace that XML might have introduced.
 	clean := make([]byte, 0, len(s))
-	for i := 0; i < len(s); i++ {
+	for i := range len(s) {
 		c := s[i]
 		if c == ' ' || c == '\t' || c == '\n' || c == '\r' {
 			continue
@@ -274,4 +274,3 @@ func decodeBase64(s string) ([]byte, error) {
 }
 
 func encodeBase64(b []byte) string { return base64Encode(b) }
-
