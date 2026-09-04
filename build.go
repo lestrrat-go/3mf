@@ -59,7 +59,7 @@ func NewBuildItem(opts ...Option) *BuildItem {
 // item's ObjectID is taken from the object's id at construction time.
 func WithObjectRef(o *Object) Option { return option.New(identBuildItemObjectRef{}, o) }
 
-// WithObjectID sets a BuildItem's ObjectID directly (useful when the
+// WithBuildObjectID sets a BuildItem's ObjectID directly (useful when the
 // target object lives in a different model part referenced by WithItemPath).
 func WithBuildObjectID(id uint32) Option { return option.New(identBuildItemObjectID{}, id) }
 

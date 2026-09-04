@@ -83,3 +83,6 @@ const (
 
 // DefaultModelPath is the conventional path for the root 3MF model part.
 const DefaultModelPath = "/3D/3dmodel.model"
+
+// modelElementName is the local name of the root element of a 3MF model part.
+const modelElementName = "model"

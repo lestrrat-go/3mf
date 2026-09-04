@@ -146,7 +146,7 @@ func readZipFile(f *zip.File) ([]byte, error) {
 // "/3D/_rels/3dmodel.model.rels" it returns "/3D/3dmodel.model".
 func sourceForRels(relsName string) string {
 	p := NormalizePartName(relsName)
-	if p == "/_rels/.rels" {
+	if p == rootRelsName {
 		return "/"
 	}
 	dir, base := path.Split(p)

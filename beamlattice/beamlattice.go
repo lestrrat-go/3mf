@@ -59,14 +59,14 @@ func parseCapMode(s string) CapMode {
 
 // BeamLattice is the value attached to a Mesh via Mesh.Extension(Namespace).
 type BeamLattice struct {
-	Radius           float64
-	MinLength        float64
-	Cap              CapMode
-	ClippingMode     string // "none" | "inside" | "outside"
-	ClippingMesh     uint32 // object id
+	Radius             float64
+	MinLength          float64
+	Cap                CapMode
+	ClippingMode       string // "none" | "inside" | "outside"
+	ClippingMesh       uint32 // object id
 	RepresentationMesh uint32 // object id
-	Beams            []Beam
-	BallSets         []BallSet
+	Beams              []Beam
+	BallSets           []BallSet
 }
 
 // Beam is a single beam (line segment between two vertices) with optional

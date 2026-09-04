@@ -29,8 +29,8 @@ func Require(m *tmf.Model) { m.RequireExtension(Namespace, Prefix) }
 // Of returns the materials Resources attached to res, creating an empty
 // one if none exists yet.
 func Of(res *tmf.Resources) *Resources {
-	if v := res.ExtensionResources(Namespace); v != nil {
-		return v.(*Resources)
+	if v, ok := res.ExtensionResources(Namespace).(*Resources); ok {
+		return v
 	}
 	r := &Resources{}
 	res.SetExtensionResources(Namespace, r)
@@ -47,17 +47,9 @@ func (extReader) ReadResourceElement(res *tmf.Resources, elem *helium.Element) e
 		}
 		mr.ColorGroups = append(mr.ColorGroups, cg)
 	case "texture2d":
-		t, err := readTexture2D(elem)
-		if err != nil {
-			return err
-		}
-		mr.Texture2Ds = append(mr.Texture2Ds, t)
+		mr.Texture2Ds = append(mr.Texture2Ds, readTexture2D(elem))
 	case "texture2dgroup":
-		g, err := readTexture2DGroup(elem)
-		if err != nil {
-			return err
-		}
-		mr.Texture2DGroups = append(mr.Texture2DGroups, g)
+		mr.Texture2DGroups = append(mr.Texture2DGroups, readTexture2DGroup(elem))
 	case "compositematerials":
 		c, err := readCompositeMaterials(elem)
 		if err != nil {
@@ -114,7 +106,7 @@ func (extWriter) WriteResourceElements(res *tmf.Resources, w *tmf.Writer) error 
 // ---- readers ----
 
 func readColorGroup(elem *helium.Element) (*ColorGroup, error) {
-	id, _ := attrUint32(elem, "id")
+	id := attrUint32(elem, "id")
 	cg := &ColorGroup{ID: id}
 	for child := range childElems(elem, "color") {
 		c, err := tmf.ParseColor(attr(child, "color"))
@@ -126,8 +118,10 @@ func readColorGroup(elem *helium.Element) (*ColorGroup, error) {
 	return cg, nil
 }
 
-func readTexture2D(elem *helium.Element) (*Texture2D, error) {
-	id, _ := attrUint32(elem, "id")
+// readTexture2D never fails: every attribute is optional and malformed
+// values fall back to their zero value.
+func readTexture2D(elem *helium.Element) *Texture2D {
+	id := attrUint32(elem, "id")
 	t := &Texture2D{
 		ID:          id,
 		Path:        attr(elem, "path"),
@@ -147,27 +141,29 @@ func readTexture2D(elem *helium.Element) (*Texture2D, error) {
 			t.BoxMax = &Vec2{U: u1, V: v1}
 		}
 	}
-	return t, nil
+	return t
 }
 
-func readTexture2DGroup(elem *helium.Element) (*Texture2DGroup, error) {
-	id, _ := attrUint32(elem, "id")
-	tex, _ := attrUint32(elem, "texid")
+// readTexture2DGroup never fails: coordinates that don't parse are read as
+// zero.
+func readTexture2DGroup(elem *helium.Element) *Texture2DGroup {
+	id := attrUint32(elem, "id")
+	tex := attrUint32(elem, "texid")
 	g := &Texture2DGroup{ID: id, TextureID: tex}
 	for child := range childElems(elem, "tex2coord") {
-		u, _ := attrFloat(child, "u")
-		v, _ := attrFloat(child, "v")
+		u := attrFloat(child, "u")
+		v := attrFloat(child, "v")
 		g.Coords = append(g.Coords, TextureCoord{U: u, V: v})
 	}
-	return g, nil
+	return g
 }
 
 func readCompositeMaterials(elem *helium.Element) (*CompositeMaterials, error) {
-	id, _ := attrUint32(elem, "id")
-	mat, _ := attrUint32(elem, "matid")
+	id := attrUint32(elem, "id")
+	mat := attrUint32(elem, "matid")
 	c := &CompositeMaterials{ID: id, MatID: mat}
 	if s := attr(elem, "matindices"); s != "" {
-		for _, f := range strings.Fields(s) {
+		for f := range strings.FieldsSeq(s) {
 			n, err := strconv.ParseUint(f, 10, 32)
 			if err != nil {
 				return nil, fmt.Errorf("materials: matindices: %w", err)
@@ -191,10 +187,10 @@ func readCompositeMaterials(elem *helium.Element) (*CompositeMaterials, error) {
 }
 
 func readMultiProperties(elem *helium.Element) (*MultiProperties, error) {
-	id, _ := attrUint32(elem, "id")
+	id := attrUint32(elem, "id")
 	mp := &MultiProperties{ID: id}
 	if s := attr(elem, "pids"); s != "" {
-		for _, f := range strings.Fields(s) {
+		for f := range strings.FieldsSeq(s) {
 			n, err := strconv.ParseUint(f, 10, 32)
 			if err != nil {
 				return nil, fmt.Errorf("materials: pids: %w", err)
@@ -207,7 +203,7 @@ func readMultiProperties(elem *helium.Element) (*MultiProperties, error) {
 	}
 	for child := range childElems(elem, "multi") {
 		entry := MultiEntry{}
-		for _, f := range strings.Fields(attr(child, "pindices")) {
+		for f := range strings.FieldsSeq(attr(child, "pindices")) {
 			n, err := strconv.ParseUint(f, 10, 32)
 			if err != nil {
 				return nil, fmt.Errorf("materials: pindices: %w", err)
@@ -376,28 +372,24 @@ func attr(elem *helium.Element, local string) string {
 	return a.Value()
 }
 
-func attrUint32(elem *helium.Element, local string) (uint32, bool) {
-	s := attr(elem, local)
-	if s == "" {
-		return 0, false
-	}
-	v, err := strconv.ParseUint(s, 10, 32)
+// attrUint32 returns the named attribute parsed as a uint32. A missing or
+// unparsable attribute reads as 0.
+func attrUint32(elem *helium.Element, local string) uint32 {
+	v, err := strconv.ParseUint(attr(elem, local), 10, 32)
 	if err != nil {
-		return 0, false
+		return 0
 	}
-	return uint32(v), true
+	return uint32(v)
 }
 
-func attrFloat(elem *helium.Element, local string) (float64, bool) {
-	s := attr(elem, local)
-	if s == "" {
-		return 0, false
-	}
-	v, err := strconv.ParseFloat(s, 64)
+// attrFloat returns the named attribute parsed as a float64. A missing or
+// unparsable attribute reads as 0.
+func attrFloat(elem *helium.Element, local string) float64 {
+	v, err := strconv.ParseFloat(attr(elem, local), 64)
 	if err != nil {
-		return 0, false
+		return 0
 	}
-	return v, true
+	return v
 }
 
 func childElems(parent *helium.Element, local string) func(yield func(*helium.Element) bool) {

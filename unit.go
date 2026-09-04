@@ -69,8 +69,6 @@ const (
 
 func (t ObjectType) String() string {
 	switch t {
-	case ObjectTypeModel:
-		return "model"
 	case ObjectTypeSolidSupport:
 		return "solidsupport"
 	case ObjectTypeSupport:

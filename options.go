@@ -11,16 +11,16 @@ type Option = option.Interface
 // is an unexported zero-size struct so that only this package may construct
 // the corresponding Option values.
 type (
-	identUnit                     struct{}
-	identLanguage                 struct{}
-	identThumbnail                struct{}
-	identModelMetadata            struct{}
-	identResources                struct{}
-	identObjectResource           struct{}
-	identBaseMaterialsResource    struct{}
-	identBuildItem                struct{}
-	identExtensionPayload         struct{}
-	identRequiredExtension        struct{}
+	identUnit                  struct{}
+	identLanguage              struct{}
+	identThumbnail             struct{}
+	identModelMetadata         struct{}
+	identResources             struct{}
+	identObjectResource        struct{}
+	identBaseMaterialsResource struct{}
+	identBuildItem             struct{}
+	identExtensionPayload      struct{}
+	identRequiredExtension     struct{}
 
 	identObjectID         struct{}
 	identObjectName       struct{}

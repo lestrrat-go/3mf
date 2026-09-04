@@ -2,7 +2,7 @@ package opc
 
 import (
 	"iter"
-	"sort"
+	"slices"
 )
 
 // sortedKV iterates over m in key-sorted order. Deterministic output is
@@ -13,7 +13,7 @@ func sortedKV[K ~string, V any](m map[K]V) iter.Seq2[K, V] {
 	for k := range m {
 		keys = append(keys, k)
 	}
-	sort.Slice(keys, func(i, j int) bool { return keys[i] < keys[j] })
+	slices.Sort(keys)
 	return func(yield func(K, V) bool) {
 		for _, k := range keys {
 			if !yield(k, m[k]) {

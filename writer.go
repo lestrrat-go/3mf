@@ -28,7 +28,7 @@ func writeModel(w *Writer, m *Model) error {
 	if err := sw.StartDocument("1.0", "UTF-8", "yes"); err != nil {
 		return err
 	}
-	if err := sw.StartElement("model"); err != nil {
+	if err := sw.StartElement(modelElementName); err != nil {
 		return err
 	}
 

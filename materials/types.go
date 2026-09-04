@@ -43,9 +43,9 @@ type Texture2D struct {
 // reference. Triangles use Texture2DGroup.ID via the standard PID attribute,
 // and the per-triangle p1/p2/p3 indices select rows from Coords.
 type Texture2DGroup struct {
-	ID         uint32
-	TextureID  uint32
-	Coords     []TextureCoord
+	ID        uint32
+	TextureID uint32
+	Coords    []TextureCoord
 }
 
 // TextureCoord is a single (u, v) entry inside a Texture2DGroup.
@@ -56,10 +56,10 @@ type TextureCoord struct {
 // CompositeMaterials defines a list of weighted blends of base materials.
 // Useful for printers that mix per-voxel materials.
 type CompositeMaterials struct {
-	ID             uint32
-	MatID          uint32   // BaseMaterials id this composite references
-	MatIndices     []uint32 // indices into the referenced base material list
-	Composites     []Composite
+	ID         uint32
+	MatID      uint32   // BaseMaterials id this composite references
+	MatIndices []uint32 // indices into the referenced base material list
+	Composites []Composite
 }
 
 // Composite is one composite entry; Values has the same length as the
@@ -71,10 +71,10 @@ type Composite struct {
 // MultiProperties combines multiple property layers (e.g., color + finish)
 // into a single PID that triangles can reference.
 type MultiProperties struct {
-	ID         uint32
-	PIDs       []uint32 // ordered list of property-group ids
+	ID           uint32
+	PIDs         []uint32 // ordered list of property-group ids
 	BlendMethods []string
-	Multis     []MultiEntry
+	Multis       []MultiEntry
 }
 
 // MultiEntry is one row of a MultiProperties: PIndices[i] selects an index
