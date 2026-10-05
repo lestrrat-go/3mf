@@ -15,8 +15,6 @@ package volumetric
 import (
 	"strconv"
 
-	"github.com/lestrrat-go/helium"
-
 	tmf "github.com/lestrrat-go/3mf"
 )
 
@@ -89,7 +87,7 @@ func init() {
 	tmf.RegisterExtensionWriter(extWriter{})
 }
 
-func (extReader) ReadResourceElement(res *tmf.Resources, elem *helium.Element) error {
+func (extReader) ReadResourceElement(res *tmf.Resources, elem *tmf.Element) error {
 	vr := Of(res)
 	switch elem.LocalName() {
 	case "function":
@@ -113,39 +111,29 @@ func (extReader) ReadResourceElement(res *tmf.Resources, elem *helium.Element) e
 		}
 		v.Channel = attr(elem, "channel")
 		for _, a := range elem.Attributes() {
-			if a == nil {
-				continue
-			}
-			name := a.Name()
+			name := a.Name
 			switch name {
 			case "id", "functionid", "channel":
 				continue
 			}
-			v.Inputs[name] = a.Value()
+			v.Inputs[name] = a.Value
 		}
 		vr.Volumetrics = append(vr.Volumetrics, v)
 	}
 	return nil
 }
 
-func readNode(elem *helium.Element) *Node {
+func readNode(elem *tmf.Element) *Node {
 	n := &Node{
 		Name:       elem.LocalName(),
 		Attributes: map[string]string{},
 	}
 	for _, a := range elem.Attributes() {
-		if a == nil {
-			continue
-		}
-		n.Attributes[a.Name()] = a.Value()
+		n.Attributes[a.Name] = a.Value
 	}
-	for c := range helium.Children(elem) {
-		switch v := c.(type) {
-		case *helium.Element:
-			n.Children = append(n.Children, readNode(v))
-		case *helium.Text:
-			n.Text += string(v.Content())
-		}
+	n.Text = elem.TextContent()
+	for child := range elem.ChildElements("") {
+		n.Children = append(n.Children, readNode(child))
 	}
 	return n
 }
@@ -233,15 +221,11 @@ func writeNode(w *tmf.Writer, n *Node) error {
 
 // ---- helpers ----
 
-func attr(elem *helium.Element, local string) string {
-	a, ok := elem.FindAttribute(helium.LocalNamePredicate(local))
-	if !ok {
-		return ""
-	}
-	return a.Value()
+func attr(elem *tmf.Element, local string) string {
+	return elem.Attr(local)
 }
 
-func attrUint32(elem *helium.Element, local string) (uint32, bool) {
+func attrUint32(elem *tmf.Element, local string) (uint32, bool) {
 	s := attr(elem, local)
 	if s == "" {
 		return 0, false
@@ -253,19 +237,6 @@ func attrUint32(elem *helium.Element, local string) (uint32, bool) {
 	return uint32(v), true
 }
 
-func childElems(parent *helium.Element, local string) func(yield func(*helium.Element) bool) {
-	return func(yield func(*helium.Element) bool) {
-		for child := range helium.Children(parent) {
-			elem, ok := child.(*helium.Element)
-			if !ok {
-				continue
-			}
-			if local != "" && elem.LocalName() != local {
-				continue
-			}
-			if !yield(elem) {
-				return
-			}
-		}
-	}
+func childElems(parent *tmf.Element, local string) func(yield func(*tmf.Element) bool) {
+	return parent.ChildElements(local)
 }

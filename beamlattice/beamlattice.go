@@ -17,8 +17,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/lestrrat-go/helium"
-
 	tmf "github.com/lestrrat-go/3mf"
 )
 
@@ -120,7 +118,7 @@ func init() {
 	tmf.RegisterExtensionWriter(extWriter{})
 }
 
-func (extReader) ReadMeshElement(mesh *tmf.Mesh, elem *helium.Element) error {
+func (extReader) ReadMeshElement(mesh *tmf.Mesh, elem *tmf.Element) error {
 	if elem.LocalName() != "beamlattice" {
 		return nil
 	}
@@ -319,15 +317,11 @@ func (extWriter) WriteMeshElements(mesh *tmf.Mesh, w *tmf.Writer) error {
 
 // ---- helpers ----
 
-func attr(elem *helium.Element, local string) string {
-	a, ok := elem.FindAttribute(helium.LocalNamePredicate(local))
-	if !ok {
-		return ""
-	}
-	return a.Value()
+func attr(elem *tmf.Element, local string) string {
+	return elem.Attr(local)
 }
 
-func attrUint32(elem *helium.Element, local string) (uint32, bool) {
+func attrUint32(elem *tmf.Element, local string) (uint32, bool) {
 	s := attr(elem, local)
 	if s == "" {
 		return 0, false
@@ -339,7 +333,7 @@ func attrUint32(elem *helium.Element, local string) (uint32, bool) {
 	return uint32(v), true
 }
 
-func attrFloat(elem *helium.Element, local string) (float64, bool) {
+func attrFloat(elem *tmf.Element, local string) (float64, bool) {
 	s := attr(elem, local)
 	if s == "" {
 		return 0, false
@@ -351,21 +345,8 @@ func attrFloat(elem *helium.Element, local string) (float64, bool) {
 	return v, true
 }
 
-func childElems(parent *helium.Element, local string) func(yield func(*helium.Element) bool) {
-	return func(yield func(*helium.Element) bool) {
-		for child := range helium.Children(parent) {
-			elem, ok := child.(*helium.Element)
-			if !ok {
-				continue
-			}
-			if local != "" && elem.LocalName() != local {
-				continue
-			}
-			if !yield(elem) {
-				return
-			}
-		}
-	}
+func childElems(parent *tmf.Element, local string) func(yield func(*tmf.Element) bool) {
+	return parent.ChildElements(local)
 }
 
 // joinUint isn't currently used here but keeps the file parallel to the

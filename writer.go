@@ -24,11 +24,10 @@ func MarshalModel(m *Model) ([]byte, error) {
 }
 
 func writeModel(w *Writer, m *Model) error {
-	sw := w.Raw()
-	if err := sw.StartDocument("1.0", "UTF-8", "yes"); err != nil {
+	if err := w.StartDocument("1.0", "UTF-8", "yes"); err != nil {
 		return err
 	}
-	if err := sw.StartElement(modelElementName); err != nil {
+	if err := w.StartElement(modelElementName); err != nil {
 		return err
 	}
 
@@ -145,7 +144,7 @@ func writeModel(w *Writer, m *Model) error {
 	if err := w.EndElement(); err != nil { // </model>
 		return err
 	}
-	return sw.EndDocument()
+	return w.EndDocument()
 }
 
 func writeMetadata(w *Writer, md *Metadata) error {

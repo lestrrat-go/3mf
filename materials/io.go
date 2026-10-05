@@ -5,8 +5,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/lestrrat-go/helium"
-
 	tmf "github.com/lestrrat-go/3mf"
 )
 
@@ -37,7 +35,7 @@ func Of(res *tmf.Resources) *Resources {
 	return r
 }
 
-func (extReader) ReadResourceElement(res *tmf.Resources, elem *helium.Element) error {
+func (extReader) ReadResourceElement(res *tmf.Resources, elem *tmf.Element) error {
 	mr := Of(res)
 	switch elem.LocalName() {
 	case "colorgroup":
@@ -105,7 +103,7 @@ func (extWriter) WriteResourceElements(res *tmf.Resources, w *tmf.Writer) error 
 
 // ---- readers ----
 
-func readColorGroup(elem *helium.Element) (*ColorGroup, error) {
+func readColorGroup(elem *tmf.Element) (*ColorGroup, error) {
 	id := attrUint32(elem, "id")
 	cg := &ColorGroup{ID: id}
 	for child := range childElems(elem, "color") {
@@ -120,7 +118,7 @@ func readColorGroup(elem *helium.Element) (*ColorGroup, error) {
 
 // readTexture2D never fails: every attribute is optional and malformed
 // values fall back to their zero value.
-func readTexture2D(elem *helium.Element) *Texture2D {
+func readTexture2D(elem *tmf.Element) *Texture2D {
 	id := attrUint32(elem, "id")
 	t := &Texture2D{
 		ID:          id,
@@ -146,7 +144,7 @@ func readTexture2D(elem *helium.Element) *Texture2D {
 
 // readTexture2DGroup never fails: coordinates that don't parse are read as
 // zero.
-func readTexture2DGroup(elem *helium.Element) *Texture2DGroup {
+func readTexture2DGroup(elem *tmf.Element) *Texture2DGroup {
 	id := attrUint32(elem, "id")
 	tex := attrUint32(elem, "texid")
 	g := &Texture2DGroup{ID: id, TextureID: tex}
@@ -158,7 +156,7 @@ func readTexture2DGroup(elem *helium.Element) *Texture2DGroup {
 	return g
 }
 
-func readCompositeMaterials(elem *helium.Element) (*CompositeMaterials, error) {
+func readCompositeMaterials(elem *tmf.Element) (*CompositeMaterials, error) {
 	id := attrUint32(elem, "id")
 	mat := attrUint32(elem, "matid")
 	c := &CompositeMaterials{ID: id, MatID: mat}
@@ -186,7 +184,7 @@ func readCompositeMaterials(elem *helium.Element) (*CompositeMaterials, error) {
 	return c, nil
 }
 
-func readMultiProperties(elem *helium.Element) (*MultiProperties, error) {
+func readMultiProperties(elem *tmf.Element) (*MultiProperties, error) {
 	id := attrUint32(elem, "id")
 	mp := &MultiProperties{ID: id}
 	if s := attr(elem, "pids"); s != "" {
@@ -364,17 +362,13 @@ func writeMultiProperties(w *tmf.Writer, mp *MultiProperties) error {
 
 // ---- helpers ----
 
-func attr(elem *helium.Element, local string) string {
-	a, ok := elem.FindAttribute(helium.LocalNamePredicate(local))
-	if !ok {
-		return ""
-	}
-	return a.Value()
+func attr(elem *tmf.Element, local string) string {
+	return elem.Attr(local)
 }
 
 // attrUint32 returns the named attribute parsed as a uint32. A missing or
 // unparsable attribute reads as 0.
-func attrUint32(elem *helium.Element, local string) uint32 {
+func attrUint32(elem *tmf.Element, local string) uint32 {
 	v, err := strconv.ParseUint(attr(elem, local), 10, 32)
 	if err != nil {
 		return 0
@@ -384,7 +378,7 @@ func attrUint32(elem *helium.Element, local string) uint32 {
 
 // attrFloat returns the named attribute parsed as a float64. A missing or
 // unparsable attribute reads as 0.
-func attrFloat(elem *helium.Element, local string) float64 {
+func attrFloat(elem *tmf.Element, local string) float64 {
 	v, err := strconv.ParseFloat(attr(elem, local), 64)
 	if err != nil {
 		return 0
@@ -392,21 +386,8 @@ func attrFloat(elem *helium.Element, local string) float64 {
 	return v
 }
 
-func childElems(parent *helium.Element, local string) func(yield func(*helium.Element) bool) {
-	return func(yield func(*helium.Element) bool) {
-		for child := range helium.Children(parent) {
-			elem, ok := child.(*helium.Element)
-			if !ok {
-				continue
-			}
-			if local != "" && elem.LocalName() != local {
-				continue
-			}
-			if !yield(elem) {
-				return
-			}
-		}
-	}
+func childElems(parent *tmf.Element, local string) func(yield func(*tmf.Element) bool) {
+	return parent.ChildElements(local)
 }
 
 func formatU32(u uint32) string { return strconv.FormatUint(uint64(u), 10) }

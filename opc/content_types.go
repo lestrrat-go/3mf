@@ -8,8 +8,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/lestrrat-go/helium"
-	"github.com/lestrrat-go/helium/stream"
+	"github.com/lestrrat-go/3mf/internal/xmltree"
 )
 
 // ContentTypeNS is the XML namespace for [Content_Types].xml.
@@ -67,7 +66,7 @@ func (c *ContentTypes) Lookup(partName string) string {
 // ParseContentTypes reads a [Content_Types].xml payload and returns the
 // parsed ContentTypes value.
 func ParseContentTypes(data []byte) (*ContentTypes, error) {
-	doc, err := helium.NewParser().Parse(context.Background(), data)
+	doc, err := xmltree.Parse(context.Background(), data)
 	if err != nil {
 		return nil, fmt.Errorf("opc: parse content types: %w", err)
 	}
@@ -76,8 +75,8 @@ func ParseContentTypes(data []byte) (*ContentTypes, error) {
 		return nil, fmt.Errorf("opc: content types root must be <Types>")
 	}
 	ct := NewContentTypes()
-	for child := range helium.Children(root) {
-		elem, ok := child.(*helium.Element)
+	for child := range xmltree.Children(root) {
+		elem, ok := child.(*xmltree.Element)
 		if !ok {
 			continue
 		}
@@ -102,7 +101,7 @@ func ParseContentTypes(data []byte) (*ContentTypes, error) {
 // WriteTo serializes c as a [Content_Types].xml payload.
 func (c *ContentTypes) WriteTo(w io.Writer) (int64, error) {
 	cw := &countingWriter{w: w}
-	sw := stream.NewWriter(cw)
+	sw := xmltree.NewWriter(cw)
 	if err := sw.StartDocument("1.0", "UTF-8", "yes"); err != nil {
 		return cw.n, err
 	}
@@ -160,8 +159,8 @@ func (c *ContentTypes) Bytes() ([]byte, error) {
 
 // attr returns the first attribute on elem with the given local name,
 // regardless of namespace.
-func attr(elem *helium.Element, local string) string {
-	a, ok := elem.FindAttribute(helium.LocalNamePredicate(local))
+func attr(elem *xmltree.Element, local string) string {
+	a, ok := elem.FindAttribute(xmltree.LocalNamePredicate(local))
 	if !ok {
 		return ""
 	}

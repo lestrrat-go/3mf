@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/lestrrat-go/helium"
+	"github.com/lestrrat-go/3mf/internal/xmltree"
 
 	"github.com/lestrrat-go/3mf/internal/xmlutil"
 )
 
 // ReadModel parses a 3dmodel.model XML payload into a *Model.
 func ReadModel(ctx context.Context, data []byte) (*Model, error) {
-	doc, err := helium.NewParser().Parse(ctx, data)
+	doc, err := xmltree.Parse(ctx, data)
 	if err != nil {
 		return nil, fmt.Errorf("tmf: parse model XML: %w", err)
 	}
@@ -23,7 +23,7 @@ func ReadModel(ctx context.Context, data []byte) (*Model, error) {
 	return readModel(root)
 }
 
-func readModel(root *helium.Element) (*Model, error) {
+func readModel(root *xmltree.Element) (*Model, error) {
 	m := NewModel()
 	// Unit
 	if s := xmlutil.Attr(root, "unit"); s != "" {
@@ -73,7 +73,7 @@ func readModel(root *helium.Element) (*Model, error) {
 	return m, nil
 }
 
-func readMetadata(elem *helium.Element) *Metadata {
+func readMetadata(elem *xmltree.Element) *Metadata {
 	md := &Metadata{
 		Name: xmlutil.Attr(elem, "name"),
 		Type: xmlutil.Attr(elem, "type"),
@@ -87,7 +87,7 @@ func readMetadata(elem *helium.Element) *Metadata {
 	return md
 }
 
-func readResources(elem *helium.Element, res *Resources) error {
+func readResources(elem *xmltree.Element, res *Resources) error {
 	for child := range xmlutil.ChildElements(elem, "") {
 		ns := ""
 		if n := child.Namespace(); n != nil {
@@ -95,7 +95,7 @@ func readResources(elem *helium.Element, res *Resources) error {
 		}
 		if ns != "" && ns != NSCore {
 			if r := LookupExtensionReader(ns); r != nil {
-				if err := r.ReadResourceElement(res, child); err != nil {
+				if err := r.ReadResourceElement(res, wrapElement(child)); err != nil {
 					return err
 				}
 			}
@@ -119,7 +119,7 @@ func readResources(elem *helium.Element, res *Resources) error {
 	return nil
 }
 
-func readBaseMaterials(elem *helium.Element) (*BaseMaterials, error) {
+func readBaseMaterials(elem *xmltree.Element) (*BaseMaterials, error) {
 	id, _ := xmlutil.AttrUint32(elem, "id")
 	bm := &BaseMaterials{id: id}
 	for child := range xmlutil.ChildElements(elem, "base") {
@@ -134,7 +134,7 @@ func readBaseMaterials(elem *helium.Element) (*BaseMaterials, error) {
 	return bm, nil
 }
 
-func readObject(elem *helium.Element) (*Object, error) {
+func readObject(elem *xmltree.Element) (*Object, error) {
 	obj := &Object{}
 	if v, ok := xmlutil.AttrUint32(elem, "id"); ok {
 		obj.id = v
@@ -163,7 +163,7 @@ func readObject(elem *helium.Element) (*Object, error) {
 		}
 		if ns != "" && ns != NSCore {
 			if r := LookupExtensionReader(ns); r != nil {
-				if err := r.ReadObjectElement(obj, child); err != nil {
+				if err := r.ReadObjectElement(obj, wrapElement(child)); err != nil {
 					return nil, err
 				}
 			}
@@ -189,7 +189,7 @@ func readObject(elem *helium.Element) (*Object, error) {
 	return obj, nil
 }
 
-func readMesh(elem *helium.Element) (*Mesh, error) {
+func readMesh(elem *xmltree.Element) (*Mesh, error) {
 	mesh := &Mesh{}
 	for child := range xmlutil.ChildElements(elem, "") {
 		ns := ""
@@ -198,7 +198,7 @@ func readMesh(elem *helium.Element) (*Mesh, error) {
 		}
 		if ns != "" && ns != NSCore {
 			if r := LookupExtensionReader(ns); r != nil {
-				if err := r.ReadMeshElement(mesh, child); err != nil {
+				if err := r.ReadMeshElement(mesh, wrapElement(child)); err != nil {
 					return nil, err
 				}
 			}
@@ -223,7 +223,7 @@ func readMesh(elem *helium.Element) (*Mesh, error) {
 
 // readTriangle never fails: absent or unparsable indices read as 0, matching
 // how <vertex> coordinates are handled.
-func readTriangle(elem *helium.Element) Triangle {
+func readTriangle(elem *xmltree.Element) Triangle {
 	v1, _ := xmlutil.AttrUint32(elem, "v1")
 	v2, _ := xmlutil.AttrUint32(elem, "v2")
 	v3, _ := xmlutil.AttrUint32(elem, "v3")
@@ -252,7 +252,7 @@ func readTriangle(elem *helium.Element) Triangle {
 	return t
 }
 
-func readComponent(elem *helium.Element) (*Component, error) {
+func readComponent(elem *xmltree.Element) (*Component, error) {
 	c := &Component{Transform: IdentityMatrix()}
 	id, _ := xmlutil.AttrUint32(elem, "objectid")
 	c.ObjectID = id
@@ -268,7 +268,7 @@ func readComponent(elem *helium.Element) (*Component, error) {
 	return c, nil
 }
 
-func readBuild(elem *helium.Element, build *Build) error {
+func readBuild(elem *xmltree.Element, build *Build) error {
 	build.UUID = xmlutil.AttrNS(elem, "UUID", NSProduction)
 	for child := range xmlutil.ChildElements(elem, "") {
 		ns := ""
@@ -277,7 +277,7 @@ func readBuild(elem *helium.Element, build *Build) error {
 		}
 		if ns != "" && ns != NSCore {
 			if r := LookupExtensionReader(ns); r != nil {
-				if err := r.ReadBuildElement(build, child); err != nil {
+				if err := r.ReadBuildElement(build, wrapElement(child)); err != nil {
 					return err
 				}
 			}
@@ -295,7 +295,7 @@ func readBuild(elem *helium.Element, build *Build) error {
 	return nil
 }
 
-func readBuildItem(elem *helium.Element) (*BuildItem, error) {
+func readBuildItem(elem *xmltree.Element) (*BuildItem, error) {
 	id, _ := xmlutil.AttrUint32(elem, "objectid")
 	item := &BuildItem{
 		ObjectID:   id,

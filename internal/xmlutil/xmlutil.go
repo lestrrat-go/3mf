@@ -6,14 +6,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/lestrrat-go/helium"
+	"github.com/lestrrat-go/3mf/internal/xmltree"
 )
 
 // Attr returns the value of the first attribute on elem whose local name
 // equals local, regardless of namespace. An empty string is returned when
 // no such attribute exists.
-func Attr(elem *helium.Element, local string) string {
-	a, ok := elem.FindAttribute(helium.LocalNamePredicate(local))
+func Attr(elem *xmltree.Element, local string) string {
+	a, ok := elem.FindAttribute(xmltree.LocalNamePredicate(local))
 	if !ok {
 		return ""
 	}
@@ -22,8 +22,8 @@ func Attr(elem *helium.Element, local string) string {
 
 // AttrNS returns the value of the first attribute on elem with the given
 // local name and namespace URI.
-func AttrNS(elem *helium.Element, local, ns string) string {
-	a, ok := elem.FindAttribute(helium.NSPredicate{Local: local, NamespaceURI: ns})
+func AttrNS(elem *xmltree.Element, local, ns string) string {
+	a, ok := elem.FindAttribute(xmltree.NSPredicate{Local: local, NamespaceURI: ns})
 	if !ok {
 		return ""
 	}
@@ -32,7 +32,7 @@ func AttrNS(elem *helium.Element, local, ns string) string {
 
 // AttrUint32 parses a uint32 attribute, returning 0 when absent or malformed.
 // The "ok" return distinguishes "absent" from "zero".
-func AttrUint32(elem *helium.Element, local string) (uint32, bool) {
+func AttrUint32(elem *xmltree.Element, local string) (uint32, bool) {
 	s := Attr(elem, local)
 	if s == "" {
 		return 0, false
@@ -45,7 +45,7 @@ func AttrUint32(elem *helium.Element, local string) (uint32, bool) {
 }
 
 // AttrFloat64 parses a float64 attribute, returning 0 when absent or malformed.
-func AttrFloat64(elem *helium.Element, local string) (float64, bool) {
+func AttrFloat64(elem *xmltree.Element, local string) (float64, bool) {
 	s := Attr(elem, local)
 	if s == "" {
 		return 0, false
@@ -59,10 +59,10 @@ func AttrFloat64(elem *helium.Element, local string) (float64, bool) {
 
 // ChildElements iterates over child elements of parent, optionally filtered
 // by local name. Pass "" to get every element child.
-func ChildElements(parent *helium.Element, local string) func(yield func(*helium.Element) bool) {
-	return func(yield func(*helium.Element) bool) {
-		for child := range helium.Children(parent) {
-			elem, ok := child.(*helium.Element)
+func ChildElements(parent *xmltree.Element, local string) func(yield func(*xmltree.Element) bool) {
+	return func(yield func(*xmltree.Element) bool) {
+		for child := range xmltree.Children(parent) {
+			elem, ok := child.(*xmltree.Element)
 			if !ok {
 				continue
 			}
@@ -76,15 +76,12 @@ func ChildElements(parent *helium.Element, local string) func(yield func(*helium
 	}
 }
 
-// TextContent returns the concatenation of all direct Text/CDATA children of
-// elem. Comments, processing instructions, and element children are ignored.
-func TextContent(elem *helium.Element) string {
+// TextContent returns the concatenation of direct text children of elem.
+// The decoder also returns CDATA as text. Element children are ignored.
+func TextContent(elem *xmltree.Element) string {
 	var b strings.Builder
-	for child := range helium.Children(elem) {
-		switch v := child.(type) {
-		case *helium.Text:
-			b.Write(v.Content())
-		case *helium.CDATASection:
+	for child := range xmltree.Children(elem) {
+		if v, ok := child.(*xmltree.Text); ok {
 			b.Write(v.Content())
 		}
 	}

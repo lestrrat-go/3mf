@@ -7,6 +7,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	tmf "github.com/lestrrat-go/3mf"
+	"github.com/lestrrat-go/3mf/materials"
+	"github.com/lestrrat-go/3mf/production"
 )
 
 func TestRoundTripMinimalModel(t *testing.T) {
@@ -84,4 +86,36 @@ func TestMarshalModelXMLShape(t *testing.T) {
 	require.Contains(t, got, `<object id="1"`)
 	require.Contains(t, got, `<triangle v1="0" v2="1" v3="2"`)
 	require.Contains(t, got, `<item objectid="1"`)
+}
+
+func TestPackageRoundTripWithNamespacedExtensions(t *testing.T) {
+	mesh := tmf.NewMesh(
+		tmf.WithVertices([]tmf.Vertex{{X: 0}, {X: 1}, {Y: 1}}),
+		tmf.WithTriangles([]tmf.Triangle{{V1: 0, V2: 1, V3: 2}}),
+	)
+	obj := tmf.NewObject(
+		tmf.WithObjectID(1),
+		tmf.WithObjectUUID("00000000-0000-0000-0000-000000000001"),
+		tmf.WithMesh(mesh),
+	)
+	model := tmf.NewModel(
+		tmf.WithObject(obj),
+		tmf.WithBuildItem(tmf.NewBuildItem(tmf.WithObjectRef(obj))),
+	)
+	model.AppendMetadata(&tmf.Metadata{Name: "Title", Value: "A < B & C"})
+	materials.Require(model)
+	production.Require(model)
+	materials.Of(model.Resources()).ColorGroups = []*materials.ColorGroup{{
+		ID: 10, Colors: []tmf.Color{tmf.NewColor(255, 0, 0)},
+	}}
+
+	var buf bytes.Buffer
+	_, err := tmf.NewPackage(tmf.WithModel(model)).WriteTo(&buf)
+	require.NoError(t, err)
+
+	got, err := tmf.ReadPackage(bytes.NewReader(buf.Bytes()), int64(buf.Len()))
+	require.NoError(t, err)
+	require.Equal(t, "A < B & C", got.Model().Metadata()[0].Value)
+	require.Equal(t, obj.UUID(), got.Model().Resources().Objects()[0].UUID())
+	require.Len(t, materials.Of(got.Model().Resources()).ColorGroups, 1)
 }
