@@ -26,8 +26,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/lestrrat-go/helium"
-
 	tmf "github.com/lestrrat-go/3mf"
 )
 
@@ -56,10 +54,9 @@ type EncryptedPart struct {
 // Resources is the secure-content payload attached to tmf.Resources.
 type Resources struct {
 	EncryptedParts []*EncryptedPart
-	// AdditionalKeys carries arbitrary <keystore>-style children that this
-	// package does not yet model in detail. They round-trip as opaque
-	// element trees.
-	Extra []*helium.Element
+	// Extra stores children that this package does not yet model in detail.
+	// The writer does not currently emit these elements.
+	Extra []*tmf.Element
 }
 
 // Of returns the secure-content resources attached to res, creating one if absent.
@@ -88,7 +85,7 @@ func init() {
 	tmf.RegisterExtensionWriter(extWriter{})
 }
 
-func (extReader) ReadResourceElement(res *tmf.Resources, elem *helium.Element) error {
+func (extReader) ReadResourceElement(res *tmf.Resources, elem *tmf.Element) error {
 	if elem.LocalName() != "encryptedpart" {
 		// Preserve unknown elements for round-trip.
 		Of(res).Extra = append(Of(res).Extra, elem)
@@ -223,39 +220,16 @@ func EncryptAESGCM(key, plaintext []byte) ([]byte, error) {
 
 // ---- helpers ----
 
-func attr(elem *helium.Element, local string) string {
-	a, ok := elem.FindAttribute(helium.LocalNamePredicate(local))
-	if !ok {
-		return ""
-	}
-	return a.Value()
+func attr(elem *tmf.Element, local string) string {
+	return elem.Attr(local)
 }
 
-func childElems(parent *helium.Element, local string) func(yield func(*helium.Element) bool) {
-	return func(yield func(*helium.Element) bool) {
-		for child := range helium.Children(parent) {
-			elem, ok := child.(*helium.Element)
-			if !ok {
-				continue
-			}
-			if local != "" && elem.LocalName() != local {
-				continue
-			}
-			if !yield(elem) {
-				return
-			}
-		}
-	}
+func childElems(parent *tmf.Element, local string) func(yield func(*tmf.Element) bool) {
+	return parent.ChildElements(local)
 }
 
-func textContent(elem *helium.Element) string {
-	var s []byte
-	for c := range helium.Children(elem) {
-		if t, ok := c.(*helium.Text); ok {
-			s = append(s, t.Content()...)
-		}
-	}
-	return string(s)
+func textContent(elem *tmf.Element) string {
+	return elem.TextContent()
 }
 
 func decodeBase64(s string) ([]byte, error) {

@@ -3,40 +3,40 @@ package tmf
 import (
 	"io"
 
-	"github.com/lestrrat-go/helium/stream"
+	"github.com/lestrrat-go/3mf/internal/xmltree"
 )
 
 // Writer is the streaming XML writer surface that the core serializer and the
-// extension sub-packages share. It wraps a helium *stream.Writer and adds a
-// shared map of namespace prefixes that the core writer has pre-declared on
+// extension sub-packages share. It tracks namespace prefixes that the core writer has pre-declared on
 // the root <model> element so that extension writers can emit
 // prefix-qualified attributes and elements without triggering a duplicate
 // xmlns declaration.
 //
-// Extension implementations must use Attr/Element/StartElement on this type
-// instead of calling the underlying stream.Writer's *NS methods. Direct
-// access to the underlying writer is available via Raw for output that
-// genuinely does not interact with extension namespaces (e.g. plain text
-// content).
+// Extension implementations use the methods on this type to write elements,
+// attributes, and text without accessing the internal XML encoder.
 type Writer struct {
-	w         stream.Writer
+	w         xmltree.Writer
 	prefixURI map[string]string // prefix -> URI declared on root
 	uriPrefix map[string]string // URI -> prefix declared on root
 }
 
-// NewWriter wraps an io.Writer in a stream.Writer and returns a *Writer ready
+// NewWriter wraps an io.Writer and returns a *Writer ready
 // for use. Callers typically prefer the higher-level WriteModel function.
 func NewWriter(w io.Writer) *Writer {
 	return &Writer{
-		w:         stream.NewWriter(w),
+		w:         xmltree.NewWriter(w),
 		prefixURI: map[string]string{},
 		uriPrefix: map[string]string{},
 	}
 }
 
-// Raw returns the underlying stream.Writer. Use only when none of the
-// helpers on Writer suffice.
-func (w *Writer) Raw() *stream.Writer { return &w.w }
+// StartDocument writes the XML declaration.
+func (w *Writer) StartDocument(version, encoding, standalone string) error {
+	return w.w.StartDocument(version, encoding, standalone)
+}
+
+// EndDocument flushes the document and reports unclosed elements.
+func (w *Writer) EndDocument() error { return w.w.EndDocument() }
 
 // DeclarePrefix records that prefix is bound to uri on the root element.
 // Subsequent calls to Attr / Element with this prefix will emit a

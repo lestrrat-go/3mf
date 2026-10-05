@@ -6,8 +6,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/lestrrat-go/helium"
-	"github.com/lestrrat-go/helium/stream"
+	"github.com/lestrrat-go/3mf/internal/xmltree"
 )
 
 // RelationshipNS is the XML namespace for OPC relationships parts.
@@ -107,7 +106,7 @@ func (r *Relationships) ResolveTarget(entry *Relationship) string {
 
 // ParseRelationships reads a .rels payload originating from source.
 func ParseRelationships(source string, data []byte) (*Relationships, error) {
-	doc, err := helium.NewParser().Parse(context.Background(), data)
+	doc, err := xmltree.Parse(context.Background(), data)
 	if err != nil {
 		return nil, fmt.Errorf("opc: parse relationships: %w", err)
 	}
@@ -116,8 +115,8 @@ func ParseRelationships(source string, data []byte) (*Relationships, error) {
 		return nil, fmt.Errorf("opc: relationships root must be <Relationships>")
 	}
 	out := NewRelationships(source)
-	for child := range helium.Children(root) {
-		elem, ok := child.(*helium.Element)
+	for child := range xmltree.Children(root) {
+		elem, ok := child.(*xmltree.Element)
 		if !ok || elem.LocalName() != "Relationship" {
 			continue
 		}
@@ -138,7 +137,7 @@ func ParseRelationships(source string, data []byte) (*Relationships, error) {
 // WriteTo serializes r as a .rels payload.
 func (r *Relationships) WriteTo(w io.Writer) (int64, error) {
 	cw := &countingWriter{w: w}
-	sw := stream.NewWriter(cw)
+	sw := xmltree.NewWriter(cw)
 	if err := sw.StartDocument("1.0", "UTF-8", "yes"); err != nil {
 		return cw.n, err
 	}

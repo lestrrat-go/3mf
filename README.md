@@ -4,9 +4,8 @@ Parse and construct [3MF](https://3mf.io) (3D Manufacturing Format) files in Go.
 
 This module implements the 3MF Core Specification plus the major 3MF
 extensions (Materials, Production, Beam Lattice, Slice, Secure Content,
-Volumetric). XML I/O is built on
-[github.com/lestrrat-go/helium](https://github.com/lestrrat-go/helium); the
-public API uses functional options via
+Volumetric). XML I/O uses Go's `encoding/xml` package; the public API uses
+functional options via
 [github.com/lestrrat-go/option/v3](https://github.com/lestrrat-go/option).
 
 ## Status
@@ -97,6 +96,10 @@ import (
 | `slice`        | `s`              | Slice stacks for printer-ready 2D contours |
 | `securecontent`| `sc`             | Encryption metadata + AES-GCM helpers; user supplies key resolver |
 | `volumetric`   | `v`              | Implicit / volumetric functions (preserved as opaque trees) |
+
+Custom extension readers receive `*tmf.Element` values. The XML writer
+provides `StartDocument` and `EndDocument` methods alongside its element,
+attribute, and text methods.
 
 To mark an extension as required by your model so its namespace appears in
 `requiredextensions` and a prefix is declared on the root `<model>`:

@@ -2,8 +2,6 @@ package tmf
 
 import (
 	"sync"
-
-	"github.com/lestrrat-go/helium"
 )
 
 // ExtensionReader is implemented by extension sub-packages and registered via
@@ -22,19 +20,19 @@ type ExtensionReader interface {
 
 	// ReadResourceElement is invoked for each direct child of <resources>
 	// whose namespace matches Namespace().
-	ReadResourceElement(res *Resources, elem *helium.Element) error
+	ReadResourceElement(res *Resources, elem *Element) error
 
 	// ReadObjectElement is invoked for each direct child of <object> whose
 	// namespace matches Namespace().
-	ReadObjectElement(obj *Object, elem *helium.Element) error
+	ReadObjectElement(obj *Object, elem *Element) error
 
 	// ReadMeshElement is invoked for each direct child of <mesh> whose
 	// namespace matches Namespace().
-	ReadMeshElement(mesh *Mesh, elem *helium.Element) error
+	ReadMeshElement(mesh *Mesh, elem *Element) error
 
 	// ReadBuildElement is invoked for each direct child of <build> whose
 	// namespace matches Namespace().
-	ReadBuildElement(b *Build, elem *helium.Element) error
+	ReadBuildElement(b *Build, elem *Element) error
 }
 
 // ExtensionWriter is the symmetric write-side hook for an extension.
@@ -110,10 +108,10 @@ func LookupExtensionWriter(ns string) ExtensionWriter {
 // embed it and override only the hooks they care about.
 type BaseExtensionReader struct{}
 
-func (BaseExtensionReader) ReadResourceElement(*Resources, *helium.Element) error { return nil }
-func (BaseExtensionReader) ReadObjectElement(*Object, *helium.Element) error      { return nil }
-func (BaseExtensionReader) ReadMeshElement(*Mesh, *helium.Element) error          { return nil }
-func (BaseExtensionReader) ReadBuildElement(*Build, *helium.Element) error        { return nil }
+func (BaseExtensionReader) ReadResourceElement(*Resources, *Element) error { return nil }
+func (BaseExtensionReader) ReadObjectElement(*Object, *Element) error      { return nil }
+func (BaseExtensionReader) ReadMeshElement(*Mesh, *Element) error          { return nil }
+func (BaseExtensionReader) ReadBuildElement(*Build, *Element) error        { return nil }
 
 // BaseExtensionWriter is the write-side analog of BaseExtensionReader.
 type BaseExtensionWriter struct{}
