@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"iter"
+	"maps"
 	"strings"
 )
 
@@ -154,9 +155,7 @@ func Parse(ctx context.Context, data []byte) (*Document, error) {
 				}
 				if len(elem.namespaces) == 0 {
 					copyScope := make(map[string]string, len(scope)+1)
-					for inheritedPrefix, uri := range scope {
-						copyScope[inheritedPrefix] = uri
-					}
+					maps.Copy(copyScope, scope)
 					scope = copyScope
 				}
 				scope[prefix] = attr.Value

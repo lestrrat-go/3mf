@@ -12,6 +12,7 @@ const extensionElementTestNamespace = "urn:3mf:element-api-test"
 
 type elementCaptureReader struct {
 	tmf.BaseExtensionReader
+
 	element *tmf.Element
 }
 
